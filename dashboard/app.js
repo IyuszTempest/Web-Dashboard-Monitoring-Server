@@ -72,7 +72,7 @@ app.get('/', async (req, res) => {
     
     <div class="max-w-6xl mx-auto mb-8 flex justify-between items-center px-4">
         <div>
-            <h1 class="text-3xl font-black italic tracking-tighter text-purple-500">Your<span class="text-white">Server</span></h1>
+            <h1 class="text-3xl font-black italic tracking-tighter text-purple-500">Your <span class="text-white">Server</span></h1>
             <p class="text-[10px] font-bold opacity-60 uppercase tracking-widest">${os.distro}</p>
         </div>
         <div class="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-full border border-white/10 glass">
