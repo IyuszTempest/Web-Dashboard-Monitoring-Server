@@ -30,9 +30,9 @@ pm2 start app.js --name dashboard
 Konfigurasi Ingress Rules untuk multi-subdomain (yaml):
 ```YAML
 ingress:
-  - hostname: euphyserver.iyusztempest.my.id
+  - hostname: server.jmk48.com
     service: http://localhost:3000
-  - hostname: files.iyusztempest.my.id
+  - hostname: files.dokslijomok.com
     service: http://localhost:8080
 ```
     
