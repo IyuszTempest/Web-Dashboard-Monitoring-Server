@@ -1,50 +1,45 @@
-# 💜 IyuszTempest Server Dashboard
+# 💜 IyuszTempest Private Server Infrastructure
 
-Dashboard monitoring server berbasis web dengan tampilan **iOS Modular Style**. Didesain khusus untuk server ringan (seperti antiX/Debian) agar tetap estetik, responsif, dan fungsional.
+Project ini adalah setup infrastruktur server pribadi yang berjalan di perangkat lama (antiX Linux) menggunakan **Cloudflare Tunnel** untuk akses publik tanpa port-forwarding.
 
 ![Preview](https://www.image2url.com/r2/default/files/1776590379448-349783d7-be0d-468e-863e-1d9c49c78787.png)
 
-## ✨ Fitur Utama
-- 📱 **iOS Widget Layout**: Tampilan modular yang rapi di desktop maupun mobile.
-- 🌫️ **Glassmorphism UI**: Efek kaca blur yang modern dengan dukungan Tailwind CSS.
-- 📊 **Real-time Monitoring**:
-    - Suhu CPU (Celsius).
-    - Penggunaan RAM (GB).
-    - Status Baterai (Persentase & Charging).
-    - Kapasitas Penyimpanan (Root disk `/`).
-- 🛠️ **System Info**: Detail GPU, Versi Kernel, dan Hostname.
+## 🛠️ Stack yang Digunakan
+- **OS:** antiX Linux (Lightweight Debian-based)
+- **Runtime:** Node.js & PM2 (Process Manager)
+- **Tunnel:** Cloudflare Tunnel (cloudflared)
+- **UI:** Tailwind CSS & Glassmorphism design
+- **Tools:** FileBrowser (Remote File Management)
 
-## 🚀 Cara Install
+## 🚀 Fitur Utama
+1. **Custom Dashboard**: Monitoring suhu CPU, RAM, Baterai, dan Storage secara real-time dengan tema iOS-style.
+2. **Secure Remote Access**: Akses aman via HTTPS melalui subdomain Cloudflare tanpa mengekspos IP publik rumah.
+3. **Web-Based File Manager**: Manajemen file bot WhatsApp dan database langsung dari browser HP/Laptop dari mana saja.
 
-### 1. Persyaratan
-Pastikan Anda sudah menginstall **Node.js** dan **npm** di server Anda.
+## 📦 Cara Setup (Overview)
 
-### 2. Clone Repository
+### 1. Dashboard Monitoring
+Instalasi dashboard dashboard kustom:
 ```bash
-git clone [https://github.com/username-lo/iyusztempest-dashboard.git](https://github.com/username-lo/iyusztempest-dashboard.git)
-cd iyusztempest-dashboard
-```
-
-### 3. Install Dependensi
-```Bash
+cd dashboard
 npm install express systeminformation
+pm2 start app.js --name dashboard
 ```
 
-### 4. Jalankan Dashboard
+### 2. Cloudflare Tunnel Configuration
+Konfigurasi Ingress Rules untuk multi-subdomain (yaml):
+```YAML
+ingress:
+  - hostname: euphyserver.iyusztempest.my.id
+    service: http://localhost:3000
+  - hostname: files.iyusztempest.my.id
+    service: http://localhost:8080
+```
+    
+### 3. File Manager
+Menjalankan FileBrowser di background:
 ```Bash
-node app.js
-Atau jika menggunakan PM2 agar berjalan di background:
+pm2 start "filebrowser -r /root -p 8080 -d /root/filebrowser.db" --name file-manager
 ```
 
-```Bash
-pm2 start app.js --name iyusz-dashboard
-```
-
-## 🌐 Akses Dashboard
-Buka browser dan akses melalui IP lokal atau domain Anda:
-http://localhost:3000 atau https://domain-lo.com
-
-## ⚙️ Kustomisasi
-Background: Ubah URL gambar pada bagian body { background: url('...') } di dalam file app.js.
-
-Warna Aksen: Cari class text-purple-500 atau text-cyan-400 dan ubah sesuai selera Anda.
+Dibuat oleh Natalius (IyuszTempest) sebagai bagian dari eksplorasi sistem informasi dan manajemen server.
