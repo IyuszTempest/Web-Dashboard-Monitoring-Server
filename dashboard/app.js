@@ -3,124 +3,158 @@ const si = require('systeminformation');
 const app = express();
 const port = 3000;
 
+// API untuk data Real-time (Auto Refresh tiap 2 detik)
+app.get('/api/stats', async (req, res) => {
+    try {
+        const [cpuSpeed, temp, mem, battery, network] = await Promise.all([
+            si.cpuCurrentSpeed(),
+            si.cpuTemperature(),
+            si.mem(),
+            si.battery(),
+            si.networkStats()
+        ]);
+
+        const net = network[0] || { rx_sec: 0, tx_sec: 0 };
+        
+        res.json({
+            temp: temp.main || '--',
+            cpuSpeed: cpuSpeed.avg || '--',
+            ramUsed: (mem.active / 1024 / 1024 / 1024).toFixed(1),
+            ramPercent: (mem.active / mem.total * 100),
+            batPercent: battery.percent || 0,
+            // Jika Watt ribuan (mW), bagi 1000. Jika normal, tampilkan apa adanya.
+            batWatt: (battery.currentCapacity > 100 ? (battery.currentCapacity / 1000) : (battery.currentCapacity || 0)).toFixed(1),
+            batVolt: battery.voltage || '0',
+            // Konversi ke Mbps yang akurat
+            down: (net.rx_sec * 8 / (1024 * 1024)).toFixed(2),
+            up: (net.tx_sec * 8 / (1024 * 1024)).toFixed(2)
+        });
+    } catch (e) {
+        res.json({ error: e.message });
+    }
+});
+
+// Route Utama Tampilan Dashboard
 app.get('/', async (req, res) => {
     try {
-        const cpu = await si.cpu();
-        const temp = await si.cpuTemperature();
-        const mem = await si.mem();
         const os = await si.osInfo();
-        const diskRaw = await si.fsSize();
-        const graphics = await si.graphics();
-        const battery = await si.battery();
+        const cpu = await si.cpu();
         const uptime = si.time().uptime;
-
-        const mainDisk = diskRaw.find(d => d.mount === '/') || diskRaw[0];
-        const hours = Math.floor(uptime / 3600);
-        const minutes = Math.floor((uptime % 3600) / 60);
+        const h = Math.floor(uptime / 3600);
+        const m = Math.floor((uptime % 3600) / 60);
 
         res.send(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <script src="https://cdn.tailwindcss.com"></script>
-            <title>Your Dashboard</title>
-            <style>
-                body {
-                    background: url('https://www.image2url.com/r2/default/files/1776589728732-b3b0f985-34e5-4c21-914b-792142815c53.jpg') no-repeat center center fixed;
-                    background-size: cover;
-                    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-                }
-                .glass {
-                    background: rgba(0, 0, 0, 0.45);
-                    backdrop-filter: blur(25px) saturate(180%);
-                    -webkit-backdrop-filter: blur(25px) saturate(180%);
-                    border: 1px solid rgba(255, 255, 255, 0.2);
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-                }
-                .widget {
-                    transition: transform 0.3s ease;
-                }
-                .widget:hover {
-                    transform: scale(1.02);
-                }
-            </style>
-        </head>
-        <body class="min-h-screen p-6 md:p-12 text-white">
-            
-            <div class="max-w-6xl mx-auto mb-10 flex justify-between items-end px-4">
-                <div>
-                    <h1 class="text-4xl md:text-5xl font-black italic tracking-tighter text-white">
-                        <span class="text-purple-500">Your</span> Server
-                    </h1>
-                    <p class="text-sm font-bold opacity-70 tracking-widest mt-2">${os.distro}</p>
-                </div>
-                <div class="text-right">
-                    <p class="text-xs font-black opacity-50 uppercase mb-1 text-white">System Uptime</p>
-                    <p class="text-2xl font-black text-white">${hours}h ${minutes}m</p>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Your Server</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body {
+            background: url('https://www.image2url.com/r2/default/files/1776589728732-b3b0f985-34e5-4c21-914b-792142815c53.jpg') no-repeat center center fixed;
+            background-size: cover;
+            font-family: 'Inter', sans-serif;
+            color: white;
+        }
+        .glass { 
+            background: rgba(0, 0, 0, 0.6); 
+            backdrop-filter: blur(20px) saturate(160%); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+        }
+        .live-dot { animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    </style>
+</head>
+<body class="min-h-screen p-6">
+    
+    <div class="max-w-6xl mx-auto mb-8 flex justify-between items-center px-4">
+        <div>
+            <h1 class="text-3xl font-black italic tracking-tighter text-purple-500">Your<span class="text-white">Server</span></h1>
+            <p class="text-[10px] font-bold opacity-60 uppercase tracking-widest">${os.distro}</p>
+        </div>
+        <div class="flex items-center gap-2 bg-black/40 px-4 py-2 rounded-full border border-white/10 glass">
+            <div class="w-2 h-2 bg-green-500 rounded-full live-dot"></div>
+            <span class="text-[10px] font-black uppercase tracking-widest">Active</span>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div class="glass rounded-[30px] p-5 border-l-4 border-orange-500">
+            <p class="text-[9px] font-black opacity-50 uppercase mb-3">Temperature</p>
+            <div class="text-3xl font-black"><span id="temp">--</span>°C</div>
+        </div>
+
+        <div class="glass rounded-[30px] p-5 border-l-4 border-yellow-400">
+            <p class="text-[9px] font-black opacity-50 uppercase mb-3">CPU Speed</p>
+            <div class="text-3xl font-black"><span id="cpuSpeed">--</span><span class="text-xs ml-1">GHz</span></div>
+        </div>
+
+        <div class="glass rounded-[30px] p-5 border-l-4 border-cyan-400">
+            <p class="text-[9px] font-black opacity-50 uppercase mb-3">RAM Usage</p>
+            <div class="text-3xl font-black"><span id="ramUsed">--</span><span class="text-xs ml-1">GB</span></div>
+            <div class="w-full bg-white/10 h-1 mt-3 rounded-full overflow-hidden">
+                <div id="ramBar" class="bg-cyan-400 h-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="glass rounded-[30px] p-5 border-l-4 border-pink-500">
+            <p class="text-[9px] font-black opacity-50 uppercase mb-3">Power draw</p>
+            <div class="text-3xl font-black"><span id="batWatt">--</span><span class="text-xs ml-1">W</span></div>
+            <p class="text-[8px] mt-2 opacity-50 font-bold"><span id="batVolt">--</span>V Output</p>
+        </div>
+
+        <div class="glass rounded-[30px] p-5 border-l-4 border-blue-500">
+            <p class="text-[9px] font-black opacity-50 uppercase mb-3">Download</p>
+            <div class="text-2xl font-black text-blue-400">↓ <span id="down" class="text-white">--</span></div>
+            <p class="text-[8px] opacity-40 uppercase mt-1 italic">Mbps Speed</p>
+        </div>
+
+        <div class="glass rounded-[30px] p-5 border-l-4 border-purple-500">
+            <p class="text-[9px] font-black opacity-50 uppercase mb-3">Upload</p>
+            <div class="text-2xl font-black text-purple-400">↑ <span id="up" class="text-white">--</span></div>
+            <p class="text-[8px] opacity-40 uppercase mt-1 italic">Mbps Speed</p>
+        </div>
+
+        <div class="glass rounded-[40px] p-8 col-span-2 md:col-span-6 flex justify-between items-center px-10">
+            <div class="hidden md:block text-xs font-bold opacity-40 uppercase tracking-[0.2em] italic">${cpu.brand}</div>
+            <div class="text-center md:text-right">
+                <p class="text-[9px] font-black opacity-40 uppercase">System Status</p>
+                <div class="flex items-center gap-4">
+                    <span class="text-2xl font-black text-green-400"><span id="batPercent">--</span>% Battery</span>
+                    <span class="text-[10px] font-black bg-white/10 px-3 py-1 rounded-full border border-white/10 italic">${h}h ${m}m Uptime</span>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div class="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                
-                <div class="glass widget rounded-[35px] p-6 col-span-2 md:col-span-1 border-l-4 border-orange-500">
-                    <p class="text-[10px] font-black opacity-50 uppercase tracking-widest mb-4">Temperature</p>
-                    <div class="flex items-end gap-2">
-                        <span class="text-5xl font-black">${temp.main || '--'}</span>
-                        <span class="text-2xl font-bold text-orange-500 mb-1">°C</span>
-                    </div>
-                    <p class="text-xs mt-4 font-bold opacity-60 truncate">${cpu.brand}</p>
-                </div>
-
-                <div class="glass widget rounded-[35px] p-6 border-l-4 border-cyan-400">
-                    <p class="text-[10px] font-black opacity-50 uppercase tracking-widest mb-4">RAM</p>
-                    <h2 class="text-3xl font-black text-white">${(mem.active / 1024 / 1024 / 1024).toFixed(1)} <span class="text-sm opacity-50">GB</span></h2>
-                    <div class="w-full bg-white/10 h-1.5 rounded-full mt-6 overflow-hidden">
-                        <div class="bg-cyan-400 h-full rounded-full" style="width: ${(mem.active/mem.total*100)}%"></div>
-                    </div>
-                </div>
-
-                <div class="glass widget rounded-[35px] p-6 border-l-4 border-green-400">
-                    <p class="text-[10px] font-black opacity-50 uppercase tracking-widest mb-4">Battery</p>
-                    <h2 class="text-3xl font-black text-white">${battery.percent}%</h2>
-                    <p class="text-[10px] mt-4 font-bold ${battery.isCharging ? 'text-green-400' : 'text-yellow-400'} uppercase">
-                        ${battery.isCharging ? 'Charging' : 'On Battery'}
-                    </p>
-                </div>
-
-                <div class="glass widget rounded-[35px] p-6 border-l-4 border-purple-500">
-                    <p class="text-[10px] font-black opacity-50 uppercase tracking-widest mb-4">Storage ( / )</p>
-                    <h2 class="text-3xl font-black text-white">${(mainDisk.used / 1024 / 1024 / 1024).toFixed(2)} <span class="text-sm opacity-50">GB</span></h2>
-                    <p class="text-[10px] mt-4 font-bold opacity-60 italic">Free: ${(mainDisk.available / 1024 / 1024 / 1024).toFixed(1)}GB</p>
-                </div>
-
-                <div class="glass widget rounded-[40px] p-8 col-span-2 md:col-span-3 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div class="text-center md:text-left">
-                        <p class="text-[10px] font-black opacity-40 uppercase tracking-widest mb-2">Graphics Processor</p>
-                        <p class="text-xl font-bold text-emerald-400">${graphics.controllers[0].model}</p>
-                    </div>
-                    <div class="hidden md:block w-px h-12 bg-white/10"></div>
-                    <div class="text-center md:text-right">
-                        <p class="text-[10px] font-black opacity-40 uppercase tracking-widest mb-2">Kernel Version</p>
-                        <p class="text-lg font-mono font-bold text-slate-300">${os.release}</p>
-                    </div>
-                </div>
-
-                <button onclick="location.reload()" class="glass widget rounded-[40px] p-8 col-span-2 md:col-span-1 flex items-center justify-center hover:bg-white/10 active:scale-95 transition-all group">
-                    <span class="text-lg font-black uppercase tracking-widest group-hover:text-cyan-400 transition-colors">Refresh!</span>
-                </button>
-
-            </div>
-            
-            <p class="text-center mt-10 text-[10px] font-bold opacity-30 uppercase tracking-[0.5em]">Your Private Server</p>
-
-        </body>
-        </html>
+    <script>
+        async function updateStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('temp').innerText = data.temp;
+                document.getElementById('cpuSpeed').innerText = data.cpuSpeed;
+                document.getElementById('ramUsed').innerText = data.ramUsed;
+                document.getElementById('ramBar').style.width = data.ramPercent + '%';
+                document.getElementById('batPercent').innerText = data.batPercent;
+                document.getElementById('batWatt').innerText = data.batWatt;
+                document.getElementById('batVolt').innerText = data.batVolt;
+                document.getElementById('down').innerText = data.down;
+                document.getElementById('up').innerText = data.up;
+            } catch (e) { console.log("Update Error"); }
+        }
+        setInterval(updateStats, 2000);
+        updateStats();
+    </script>
+</body>
+</html>
         `);
     } catch (e) {
         res.status(500).send("Error: " + e.message);
     }
 });
 
-app.listen(port, () => console.log('iOS Modular Dashboard Live!'));
+app.listen(port, () => console.log('Your Server Live Dashboard is Active!'));
