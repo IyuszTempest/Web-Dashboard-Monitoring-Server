@@ -1,0 +1,17 @@
+# --- CONTOH KONFIGURASI CLOUDFLARE TUNNEL ---
+# Ganti 'TUNNEL_ID_LO' dengan ID Tunnel yang lo dapet dari Cloudflare
+# Ganti 'PATH_KE_JSON' dengan lokasi file credentials .json lo
+
+tunnel: TUNNEL_ID_LO
+credentials-file: /root/.cloudflared/TUNNEL_ID_LO.json
+
+ingress:
+  # Hostname untuk Dashboard Monitoring
+  - hostname: dashboard.domain-lo.com
+    service: http://localhost:3000
+
+  - hostname: files.domain-lo.com
+    service: http://localhost:8080
+
+  # Pintu darurat kalau domain tidak ditemukan (404)
+  - service: http_status:404
