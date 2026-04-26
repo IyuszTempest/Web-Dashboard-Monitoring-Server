@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
-    <title>File Manager | Iyz Server</title>
+    <title>File Manager</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         body { 
-            background: url('https://www.image2url.com/r2/default/files/1776589728732-b3b0f985-34e5-4c21-914b-792142815c53.jpg') no-repeat center center fixed; 
+            background: url('https://4kwallpapers.com/images/walls/thumbs_3t/25920.jpg') no-repeat center center fixed; 
             background-size: cover; color: white; font-family: 'Inter', sans-serif; 
         }
         .glass { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(20px) saturate(160%); border: 1px solid rgba(255, 255, 255, 0.1); }
@@ -51,16 +51,30 @@
 </div>
 
 <div class="max-w-6xl mx-auto glass rounded-[30px] overflow-hidden">
+    <div class="bg-white/5 px-6 py-4 border-b border-white/5 flex items-center justify-between">
+        <div class="flex gap-1.5">
+            <div class="w-2.5 h-2.5 bg-[#FF5F56] rounded-full shadow-[0_0_8px_#FF5F56] live-dot"></div>
+            <div class="w-2.5 h-2.5 bg-[#FFBD2E] rounded-full shadow-[0_0_8px_#FFBD2E] live-dot" style="animation-delay: 0.2s"></div>
+            <div class="w-2.5 h-2.5 bg-[#27C93F] rounded-full shadow-[0_0_8px_#27C93F] live-dot" style="animation-delay: 0.4s"></div>
+        </div>
+        <p class="text-[9px] font-black uppercase opacity-50 tracking-[0.3em]">Cloud Explorer</p>
+        <div class="w-12"></div> </div>
+
     <table class="w-full text-left">
-        <thead class="bg-white/5 text-[9px] font-black uppercase opacity-50 tracking-[0.2em]">
+        <thead class="bg-white/5 text-[9px] font-black uppercase opacity-30 tracking-[0.2em]">
             <tr>
-                <th class="p-5">Name</th>
+                <th class="p-5">File / Folder Name</th>
                 <th class="p-5 text-center">Size</th>
                 <th class="p-5 text-right">Management</th>
             </tr>
         </thead>
-        <tbody id="fileList"></tbody>
+        <tbody id="fileList" class="divide-y divide-white/5">
+            </tbody>
     </table>
+    
+    <div id="emptyState" class="hidden p-10 text-center">
+        <p class="text-[10px] font-bold opacity-20 uppercase italic tracking-widest">No files detected in server</p>
+    </div>
 </div>
 
 <script src="https://unpkg.com/lucide@latest"></script>
