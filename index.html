@@ -87,7 +87,7 @@
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div class="flex-1">
                     <p class="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] mb-2 text-center md:text-left">Server Information</p>
-                    <h2 id="cpu-model" class="text-3xl font-black italic tracking-tighter uppercase text-center md:text-left">CELERON® N4500</h2>
+                    <h2 id="cpu-model" class="text-2xl font-black italic tracking-tighter uppercase">Loading Processor...</h2>
                     <div class="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
                         <span class="text-[9px] bg-white/10 px-4 py-1.5 rounded-full border border-white/10 font-black uppercase">2 Cores / Active</span>
                         <span class="text-[9px] bg-green-500/20 text-green-400 px-4 py-1.5 rounded-full border border-green-500/30 font-black uppercase tracking-widest">Battery Health: <span id="batHealth">--</span>%</span>
@@ -122,39 +122,40 @@
         const API_URL = "https://euphyserver.iyusztempest.my.id/api/stats";
 
         async function fetchStats() {
-            try {
-                const res = await fetch(API_URL);
-                const data = await res.json();
-                
-                // --- Row 1 & 2 (Top Grid) ---
-                document.getElementById('temp').innerText = data.temp;
-                document.getElementById('clockSpeed').innerText = data.clockSpeed;
-                document.getElementById('ramUsed').innerText = data.ramUsed;
-                document.getElementById('ramBar').style.width = data.ramPercent + '%';
-                document.getElementById('diskUsed').innerText = data.diskUsed;
-                document.getElementById('batWatt').innerText = data.batWatt;
-                document.getElementById('uptime').innerText = data.uptime;
-                
-                // --- Row 3 (New Grid Items) ---
-                document.getElementById('downSpeed').innerText = data.downSpeed || '0.00';
-                document.getElementById('upSpeed').innerText = data.upSpeed || '0.00';
-                document.getElementById('diskRead').innerText = data.diskRead || '0.00';
-                document.getElementById('diskWrite').innerText = data.diskWrite || '0.00';
-                
-                // --- Bottom Section (Detailed Specs) ---
-                document.getElementById('cores-count').innerText = data.cores;
-                document.getElementById('ramTotal').innerText = data.ramTotal;
-                document.getElementById('diskTotal').innerText = data.diskTotal;
-                document.getElementById('batPercent').innerText = data.batPercent;
-                document.getElementById('batHealth').innerText = data.batHealth || '100';
-                
-                // Status Online
-                document.getElementById('status').innerHTML = '<div class="w-2 h-2 bg-green-500 rounded-full live-dot"></div><span class="text-[10px] font-black uppercase tracking-widest text-green-400">Live Data</span>';
-            } catch (e) {
-                // Status Offline
-                document.getElementById('status').innerHTML = '<div class="w-2 h-2 bg-red-500 rounded-full"></div><span class="text-[10px] font-black uppercase tracking-widest text-red-500">Offline</span>';
-            }
-        }
+    try {
+        const res = await fetch("https://euphyserver.iyusztempest.my.id/api/stats");
+        const data = await res.json();
+        
+        // Stats Grid
+        document.getElementById('temp').innerText = data.temp;
+        document.getElementById('clockSpeed').innerText = data.clockSpeed;
+        document.getElementById('ramUsed').innerText = data.ramUsed;
+        document.getElementById('ramBar').style.width = data.ramPercent + '%';
+        document.getElementById('diskUsed').innerText = data.diskUsed;
+        document.getElementById('batWatt').innerText = data.batWatt;
+        document.getElementById('uptime').innerText = data.uptime;
+        
+        // Speed & IO
+        document.getElementById('downSpeed').innerText = data.downSpeed;
+        document.getElementById('upSpeed').innerText = data.upSpeed;
+        document.getElementById('diskRead').innerText = data.diskRead;
+        document.getElementById('diskWrite').innerText = data.diskWrite;
+
+        // Server Information (Bagian yang tadi kosong)
+        document.getElementById('cpu-model').innerText = data.cpuModel;
+        document.getElementById('batHealth').innerText = data.batHealth;
+        document.getElementById('ramTotal').innerText = data.ramTotal;
+        document.getElementById('diskTotal').innerText = data.diskTotal;
+        document.getElementById('batPercent').innerText = data.batPercent;
+        
+        // Update Status
+        document.getElementById('status-text').innerText = "Online";
+    } catch (e) {
+        console.log("Error fetching stats");
+    }
+}
+setInterval(fetchStats, 2000); // Update tiap 2 detik
+
 
         setInterval(fetchStats, 2000);
         fetchStats();
