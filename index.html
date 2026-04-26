@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Cloud Dashboard</title>
+    <style>
+        body { background: url('https://www.image2url.com/r2/default/files/1776589728732-b3b0f985-34e5-4c21-914b-792142815c53.jpg') no-repeat center center fixed; background-size: cover; color: white; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-6xl mx-auto flex justify-between items-center mb-10">
+        <h1 class="text-3xl font-black italic text-purple-500">Your <span class="text-white">Cloud Server</span></h1>
+        <div id="status" class="px-4 py-2 rounded-full glass text-[10px] font-bold uppercase tracking-widest">Connecting...</div>
+    </div>
+
+    <div class="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div class="glass rounded-[30px] p-5 border-l-4 border-orange-500">
+            <p class="text-[9px] font-black opacity-50 uppercase mb-3">Temperature</p>
+            <div class="text-3xl font-black"><span id="temp">--</span>°C</div>
+        </div>
+        </div>
+
+    <script>
+        // GANTI INI DENGAN URL TUNNEL LU
+        const API_URL = "https://euphyserver.iyusztempest.my.id/api/stats";
+
+        async function fetchStats() {
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                
+                document.getElementById('temp').innerText = data.temp;
+                document.getElementById('status').innerHTML = '<span class="text-green-400">● Live Data</span>';
+                // Update elemen lainnya...
+            } catch (e) {
+                document.getElementById('status').innerHTML = '<span class="text-red-400">● Server Offline</span>';
+            }
+        }
+
+        setInterval(fetchStats, 2000);
+        fetchStats();
+    </script>
+</body>
+</html>
