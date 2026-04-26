@@ -1,69 +1,57 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <title>File Manager | Cloud Server</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { background: url('https://www.image2url.com/r2/default/files/1776589728732-b3b0f985-34e5-4c21-914b-792142815c53.jpg') no-repeat center center fixed; background-size: cover; color: white; font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); }
-    </style>
-</head>
-<body class="p-6">
-    <div class="max-w-6xl mx-auto flex justify-between items-center mb-10">
-        <div>
-            <h1 class="text-3xl font-black italic text-purple-500">File <span class="text-white">Manager</span></h1>
-            <p class="text-[10px] font-bold opacity-60 uppercase tracking-widest">Cloud Storage Access</p>
-        </div>
-        <a href="index.html" class="bg-white/10 px-4 py-2 rounded-full border border-white/10 glass text-[10px] font-black tracking-widest hover:bg-purple-500 transition-all">← DASHBOARD</a>
+<div class="max-w-6xl mx-auto glass rounded-[30px] p-8">
+    <div class="flex justify-between mb-6">
+        <input type="file" id="fileInput" class="hidden" onchange="uploadFile()">
+        <button onclick="document.getElementById('fileInput').click()" class="bg-purple-600 px-6 py-2 rounded-full font-black text-[10px] uppercase">＋ Upload File</button>
+        <button onclick="loadFiles()" class="opacity-50 font-black text-[10px] uppercase italic">Refresh List</button>
     </div>
 
-    <div class="max-w-6xl mx-auto glass rounded-[30px] p-8">
-        <div class="overflow-hidden rounded-xl border border-white/5">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-white/5 text-[10px] font-black uppercase opacity-50">
-                    <tr>
-                        <th class="p-4">File Name</th>
-                        <th class="p-4">Size</th>
-                        <th class="p-4 text-right">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="fileList" class="text-sm font-medium">
-                    </tbody>
-            </table>
-        </div>
+    <div class="overflow-hidden rounded-xl border border-white/5">
+        <table class="w-full text-left">
+            <thead class="bg-white/5 text-[10px] font-black uppercase opacity-50">
+                <tr>
+                    <th class="p-4">Name</th>
+                    <th class="p-4">Size</th>
+                    <th class="p-4 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="fileList"></tbody>
+        </table>
     </div>
+</div>
 
-    <script>
-        const API_BASE = "https://euphyserver.iyusztempest.my.id/api";
+<script>
+    const API_BASE = "https://euphyserver.iyusztempest.my.id/api";
 
-        async function loadFiles() {
-            try {
-                const res = await fetch(`${API_BASE}/files`);
-                const files = await res.json();
-                const list = document.getElementById('fileList');
-                list.innerHTML = files.map(f => `
-                    <tr class="border-t border-white/5 hover:bg-white/5 transition-all">
-                        <td class="p-4">${f.name}</td>
-                        <td class="p-4 opacity-50">${f.size}</td>
-                        <td class="p-4 text-right">
-                            <button onclick="deleteFile('${f.name}')" class="text-red-400 font-black text-[10px] uppercase hover:underline">Delete</button>
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (e) { console.log("Gagal load file"); }
-        }
+    async function loadFiles() {
+        const res = await fetch(`${API_BASE}/files`);
+        const files = await res.json();
+        document.getElementById('fileList').innerHTML = files.map(f => `
+            <tr class="border-t border-white/5 hover:bg-white/5">
+                <td class="p-4 font-bold text-purple-300">${f.name}</td>
+                <td class="p-4 opacity-50 text-xs">${f.size}</td>
+                <td class="p-4 text-right flex justify-end gap-4">
+                    <a href="${API_BASE}/download/${f.name}" class="text-blue-400 font-bold text-[10px] uppercase">Download</a>
+                    <button onclick="deleteFile('${f.name}')" class="text-red-500 font-bold text-[10px] uppercase">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+    }
 
-        async function deleteFile(name) {
-            if(confirm('Hapus ' + name + '?')) {
-                await fetch(`${API_BASE}/delete/${name}`);
-                loadFiles();
-            }
-        }
-
+    async function uploadFile() {
+        const file = document.getElementById('fileInput').files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData });
+        alert('Upload Berhasil!');
         loadFiles();
-    </script>
-</body>
-</html>
+    }
+
+    async function deleteFile(name) {
+        if(confirm('Hapus ' + name + '?')) {
+            await fetch(`${API_BASE}/delete/${name}`, { method: 'DELETE' });
+            loadFiles();
+        }
+    }
+    loadFiles();
+</script>
