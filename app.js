@@ -1,25 +1,18 @@
 const express = require('express');
 const si = require('systeminformation');
 const cors = require('cors');
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 const multer = require('multer');
+const AdmZip = require('adm-zip');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- KONFIGURASI FILE MANAGER ---
-const ROOT_DIR = '/home/yus/api-server/uploads'; 
-if (!fs.existsSync(ROOT_DIR)) fs.mkdirSync(ROOT_DIR, { recursive: true });
+const ROOT_DIR = path.join(__dirname, 'uploads');
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, ROOT_DIR),
-    filename: (req, file, cb) => cb(null, file.originalname)
-});
-const upload = multer({ storage });
-
-// --- API MONITORING (DENGAN SPEED & HEALTH) ---
+// --- API MONITORING (Dashboard) ---
 app.get('/api/stats', async (req, res) => {
     try {
         const [cpu, cpuSpeed, temp, mem, battery, fsSize, time, net, io] = await Promise.all([
@@ -27,7 +20,6 @@ app.get('/api/stats', async (req, res) => {
             si.mem(), si.battery(), si.fsSize(), si.time(),
             si.networkStats(), si.fsStats()
         ]);
-        
         const h = Math.floor(time.uptime / 3600);
         const m = Math.floor((time.uptime % 3600) / 60);
 
@@ -41,13 +33,10 @@ app.get('/api/stats', async (req, res) => {
             ramPercent: (mem.active / mem.total * 100).toFixed(1),
             diskUsed: (fsSize[0]?.used / 1024 / 1024 / 1024).toFixed(1) || 0,
             diskTotal: (fsSize[0]?.size / 1024 / 1024 / 1024).toFixed(1) || 0,
-            // Speed Internet (Mbps)
             downSpeed: (net[0]?.rx_sec / 1024 / 1024 * 8).toFixed(2) || 0,
             upSpeed: (net[0]?.tx_sec / 1024 / 1024 * 8).toFixed(2) || 0,
-            // Speed Disk (MB/s)
             diskRead: (io.rx_sec / 1024 / 1024).toFixed(2) || 0,
             diskWrite: (io.wx_sec / 1024 / 1024).toFixed(2) || 0,
-            // Kesehatan Batre
             batHealth: battery.designCapacity > 0 ? ((battery.capacity / battery.designCapacity) * 100).toFixed(0) : 100,
             batPercent: battery.percent || 0,
             batWatt: (battery.currentCapacity > 100 ? (battery.currentCapacity / 1000) : (battery.currentCapacity || 0)).toFixed(1),
@@ -56,31 +45,32 @@ app.get('/api/stats', async (req, res) => {
     } catch (e) { res.json({ error: e.message }); }
 });
 
-// --- API FILE MANAGER (YANG LU TULIS TADI) ---
-app.get('/api/files', (req, res) => {
-    fs.readdir(ROOT_DIR, (err, files) => {
-        if (err) return res.json([]);
-        const data = files.map(name => {
-            const stats = fs.statSync(path.join(ROOT_DIR, name));
-            return { name, size: (stats.size / 1024).toFixed(1) + ' KB' };
-        });
-        res.json(data);
+// --- API FILE MANAGER ---
+app.get('/api/files', async (req, res) => {
+    const files = await fs.readdir(ROOT_DIR);
+    const data = files.map(name => {
+        const stats = fs.statSync(path.join(ROOT_DIR, name));
+        return { name, size: (stats.size / 1024).toFixed(1) + ' KB', isDir: stats.isDirectory() };
     });
+    res.json(data);
 });
 
-app.post('/api/upload', upload.single('file'), (req, res) => {
+const upload = multer({ storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, ROOT_DIR),
+    filename: (req, file, cb) => cb(null, file.originalname)
+})});
+
+app.post('/api/upload', upload.single('file'), (req, res) => res.json({ success: true }));
+
+app.delete('/api/delete/:name', async (req, res) => {
+    await fs.remove(path.join(ROOT_DIR, req.params.name));
     res.json({ success: true });
 });
 
-app.delete('/api/delete/:name', (req, res) => {
-    try {
-        fs.unlinkSync(path.join(ROOT_DIR, req.params.name));
-        res.json({ success: true });
-    } catch (e) { res.json({ error: e.message }); }
+app.post('/api/extract', (req, res) => {
+    const zip = new AdmZip(path.join(ROOT_DIR, req.body.name));
+    zip.extractAllTo(ROOT_DIR, true);
+    res.json({ success: true });
 });
 
-app.get('/api/download/:name', (req, res) => {
-    res.download(path.join(ROOT_DIR, req.params.name));
-});
-
-app.listen(3000, () => console.log('Server Gacor: Monitoring + File Manager Aktif!'));
+app.listen(3000, () => console.log('Super API Running on Port 3000'));
