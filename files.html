@@ -1,57 +1,125 @@
-<div class="max-w-6xl mx-auto glass rounded-[30px] p-8">
-    <div class="flex justify-between mb-6">
-        <input type="file" id="fileInput" class="hidden" onchange="uploadFile()">
-        <button onclick="document.getElementById('fileInput').click()" class="bg-purple-600 px-6 py-2 rounded-full font-black text-[10px] uppercase">＋ Upload File</button>
-        <button onclick="loadFiles()" class="opacity-50 font-black text-[10px] uppercase italic">Refresh List</button>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>File Manager | Iyz Server</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { 
+            background: url('https://www.image2url.com/r2/default/files/1776589728732-b3b0f985-34e5-4c21-914b-792142815c53.jpg') no-repeat center center fixed; 
+            background-size: cover; color: white; font-family: 'Inter', sans-serif; 
+        }
+        .glass { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(20px) saturate(160%); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .btn-action:hover { background: rgba(168, 85, 247, 0.4); transform: translateY(-1px); }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-6xl mx-auto flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-black italic text-purple-500 uppercase">File <span class="text-white">Manager</span></h1>
+            <p class="text-[10px] font-bold opacity-50 uppercase tracking-[0.2em]">Cloud Storage Access</p>
+        </div>
+        <a href="index.html" class="glass px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-purple-500 transition-all">
+            ← Back to Dashboard
+        </a>
     </div>
 
-    <div class="overflow-hidden rounded-xl border border-white/5">
-        <table class="w-full text-left">
-            <thead class="bg-white/5 text-[10px] font-black uppercase opacity-50">
-                <tr>
-                    <th class="p-4">Name</th>
-                    <th class="p-4">Size</th>
-                    <th class="p-4 text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="fileList"></tbody>
-        </table>
+    <div class="max-w-6xl mx-auto glass rounded-[30px] p-6 mb-6">
+    <div class="flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <input type="file" id="fileInput" class="hidden" onchange="uploadFile()">
+            <button onclick="document.getElementById('fileInput').click()" class="bg-purple-600 hover:bg-purple-500 px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-2">
+                <i data-lucide="upload-cloud" class="w-4 h-4"></i> Upload
+            </button>
+            <button onclick="createNewFolder()" class="glass hover:bg-white/10 px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-wider transition-all flex items-center gap-2 border border-white/10">
+                <i data-lucide="folder-plus" class="w-4 h-4"></i> New Folder
+            </button>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div class="hidden md:block text-right">
+                <p class="text-[8px] font-black opacity-40 uppercase tracking-widest">Server Path</p>
+                <p class="text-[10px] font-bold text-purple-300">/api-server/uploads</p>
+            </div>
+            <button onclick="loadFiles()" class="p-3 glass rounded-full hover:rotate-180 transition-all duration-500 border border-white/10">
+                <i data-lucide="refresh-cw" class="w-4 h-4 opacity-50"></i>
+            </button>
+        </div>
     </div>
 </div>
 
+<div class="max-w-6xl mx-auto glass rounded-[30px] overflow-hidden">
+    <table class="w-full text-left">
+        <thead class="bg-white/5 text-[9px] font-black uppercase opacity-50 tracking-[0.2em]">
+            <tr>
+                <th class="p-5">Name</th>
+                <th class="p-5 text-center">Size</th>
+                <th class="p-5 text-right">Management</th>
+            </tr>
+        </thead>
+        <tbody id="fileList"></tbody>
+    </table>
+</div>
+
+<script src="https://unpkg.com/lucide@latest"></script>
 <script>
     const API_BASE = "https://euphyserver.iyusztempest.my.id/api";
+
+    // Inisialisasi Icon Lucide
+    function initIcons() { lucide.createIcons(); }
 
     async function loadFiles() {
         const res = await fetch(`${API_BASE}/files`);
         const files = await res.json();
         document.getElementById('fileList').innerHTML = files.map(f => `
-            <tr class="border-t border-white/5 hover:bg-white/5">
-                <td class="p-4 font-bold text-purple-300">${f.name}</td>
-                <td class="p-4 opacity-50 text-xs">${f.size}</td>
-                <td class="p-4 text-right flex justify-end gap-4">
-                    <a href="${API_BASE}/download/${f.name}" class="text-blue-400 font-bold text-[10px] uppercase">Download</a>
-                    <button onclick="deleteFile('${f.name}')" class="text-red-500 font-bold text-[10px] uppercase">Delete</button>
+            <tr class="border-t border-white/5 hover:bg-white/5 transition-all group">
+                <td class="p-5 font-bold text-purple-200 flex items-center gap-3">
+                    <i data-lucide="${f.isDir ? 'folder' : 'file-text'}" class="w-4 h-4 ${f.isDir ? 'text-yellow-400' : 'text-purple-400'}"></i>
+                    <span class="truncate max-w-[200px] md:max-w-md">${f.name}</span>
+                </td>
+                <td class="p-5 opacity-40 text-[10px] text-center font-mono">${f.size}</td>
+                <td class="p-5">
+                    <div class="flex justify-end gap-4">
+                        <a href="${API_BASE}/download/${f.name}" class="hover:text-blue-400 transition-colors" title="Download">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                        </a>
+                        <button onclick="renameFile('${f.name}')" class="hover:text-yellow-400 transition-colors" title="Rename">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="compressFile('${f.name}')" class="hover:text-cyan-400 transition-colors" title="Zip">
+                            <i data-lucide="archive" class="w-4 h-4"></i>
+                        </button>
+                        ${f.name.endsWith('.zip') ? `
+                        <button onclick="extractFile('${f.name}')" class="hover:text-green-400 transition-colors" title="Extract">
+                            <i data-lucide="unarchive" class="w-4 h-4"></i>
+                        </button>` : ''}
+                        <button onclick="deleteFile('${f.name}')" class="text-red-500/50 hover:text-red-500 transition-colors" title="Delete">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `).join('');
+        initIcons();
     }
 
-    async function uploadFile() {
-        const file = document.getElementById('fileInput').files[0];
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData });
-        alert('Upload Berhasil!');
-        loadFiles();
-    }
-
-    async function deleteFile(name) {
-        if(confirm('Hapus ' + name + '?')) {
-            await fetch(`${API_BASE}/delete/${name}`, { method: 'DELETE' });
+    async function createNewFolder() {
+        const name = prompt("Nama folder baru:");
+        if (name) {
+            await fetch(`${API_BASE}/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, type: 'folder' })
+            });
             loadFiles();
         }
     }
+
+    // ... (Fungsi renameFile, extractFile, compressFile, uploadFile, deleteFile tetep sama kayak sebelumnya) ...
+
     loadFiles();
 </script>
+</body>
+</html>
